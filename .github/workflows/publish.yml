@@ -17,72 +17,72 @@ jobs:
             packages: write
 
         steps:
-        - name: Free disk space
-            run: |
-            sudo rm -rf /usr/share/dotnet
-            sudo rm -rf /usr/local/lib/android
-            sudo rm -rf /opt/ghc
-            sudo rm -rf /opt/hostedtoolcache/CodeQL
-            df -h
+            - name: Free disk space
+              run: |
+                  sudo rm -rf /usr/share/dotnet
+                  sudo rm -rf /usr/local/lib/android
+                  sudo rm -rf /opt/ghc
+                  sudo rm -rf /opt/hostedtoolcache/CodeQL
+                  df -h
 
-        - uses: actions/checkout@v4
+            - uses: actions/checkout@v4
 
-        - uses: DeterminateSystems/nix-installer-action@v16
-        - uses: DeterminateSystems/magic-nix-cache-action@v8
+            - uses: DeterminateSystems/nix-installer-action@v16
+            - uses: DeterminateSystems/magic-nix-cache-action@v8
 
-        - name: Update flake inputs
-            run: nix flake update
+            - name: Update flake inputs
+              run: nix flake update
 
-        - name: Check if flake.lock changed
-            id: changed
-            run: |
-            if git diff --quiet flake.lock; then
-                echo "result=false" >> $GITHUB_OUTPUT
-            else
-                echo "result=true" >> $GITHUB_OUTPUT
-            fi
+            - name: Check if flake.lock changed
+              id: changed
+              run: |
+                  if git diff --quiet flake.lock; then
+                      echo "result=false" >> $GITHUB_OUTPUT
+                  else
+                      echo "result=true" >> $GITHUB_OUTPUT
+                  fi
 
-        - name: Build images
-            if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
-            run: |
-            nix build .#base --out-link result-base
-            nix build .#dev  --out-link result-dev
+            - name: Build images
+              if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
+              run: |
+                  nix build .#base --out-link result-base
+                  nix build .#dev  --out-link result-dev
 
-        - name: Log in to GHCR
-            if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
-            uses: docker/login-action@v3
-            with:
-            registry: ghcr.io
-            username: ${{ github.actor }}
-            password: ${{ secrets.GITHUB_TOKEN }}
+            - name: Log in to GHCR
+              if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
 
-        - name: Load, tag and push
-            if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
-            run: |
-            VERSION=$(docker load < result-base | grep "Loaded image:" | sed 's/.*://' | tr -d '\r ')
-            docker load < result-dev
-            echo "OCAML_VERSION=$VERSION" >> $GITHUB_ENV
-            docker tag "ghcr.io/josarv/ocaml:$VERSION"       ghcr.io/josarv/ocaml:latest
-            docker tag "ghcr.io/josarv/ocaml:${VERSION}-dev" ghcr.io/josarv/ocaml:latest-dev
-            docker push "ghcr.io/josarv/ocaml:$VERSION"
-            docker push  ghcr.io/josarv/ocaml:latest
-            docker push "ghcr.io/josarv/ocaml:${VERSION}-dev"
-            docker push  ghcr.io/josarv/ocaml:latest-dev
+            - name: Load, tag and push
+              if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
+              run: |
+                  VERSION=$(docker load < result-base | grep "Loaded image:" | sed 's/.*://' | tr -d '\r ')
+                  docker load < result-dev
+                  echo "OCAML_VERSION=$VERSION" >> $GITHUB_ENV
+                  docker tag "ghcr.io/josarv/ocaml:$VERSION"       ghcr.io/josarv/ocaml:latest
+                  docker tag "ghcr.io/josarv/ocaml:${VERSION}-dev" ghcr.io/josarv/ocaml:latest-dev
+                  docker push "ghcr.io/josarv/ocaml:$VERSION"
+                  docker push  ghcr.io/josarv/ocaml:latest
+                  docker push "ghcr.io/josarv/ocaml:${VERSION}-dev"
+                  docker push  ghcr.io/josarv/ocaml:latest-dev
 
-        - name: Update README version
-            if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
-            run: |
-            OLD=$(grep -oP '\d+\.\d+' README.md | head -1)
-            NEW="${{ env.OCAML_VERSION }}"
-            if [ "$OLD" != "$NEW" ]; then
-                sed -i "s/${OLD}/${NEW}/g" README.md
-            fi
+            - name: Update README version
+              if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
+              run: |
+                  OLD=$(grep -oP '\d+\.\d+' README.md | head -1)
+                  NEW="${{ env.OCAML_VERSION }}"
+                  if [ "$OLD" != "$NEW" ]; then
+                      sed -i "s/${OLD}/${NEW}/g" README.md
+                  fi
 
-        - name: Commit updated files
-            if: steps.changed.outputs.result == 'true'
-            run: |
-            git config user.name  "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add flake.lock README.md
-            git diff --staged --quiet || git commit -m "chore: update nixpkgs → OCaml ${{ env.OCAML_VERSION }}"
-            git push
+            - name: Commit updated files
+              if: steps.changed.outputs.result == 'true'
+              run: |
+                  git config user.name  "github-actions[bot]"
+                  git config user.email "github-actions[bot]@users.noreply.github.com"
+                  git add flake.lock README.md
+                  git diff --staged --quiet || git commit -m "chore: update nixpkgs → OCaml ${{ env.OCAML_VERSION }}"
+                  git push
