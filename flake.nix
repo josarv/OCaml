@@ -1,0 +1,116 @@
+{
+    description = "OCaml development environment Docker image";
+
+    inputs = {
+        nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    };
+
+    outputs = { self, nixpkgs }:
+        let
+            system = "x86_64-linux";
+            pkgs = import nixpkgs { inherit system; };
+            ocamlPkgs = pkgs.ocaml-ng.ocamlPackages_latest;
+            version = pkgs.lib.versions.majorMinor ocamlPkgs.ocaml.version;
+
+            baseToolchain = [
+                ocamlPkgs.ocaml
+                ocamlPkgs.dune_3
+                pkgs.opam
+
+                # c toolchain
+                pkgs.gcc
+                pkgs.binutils
+                pkgs.gnumake
+                pkgs.pkg-config
+                pkgs.m4
+
+                # shell, utilities and core utilities
+                pkgs.bash
+                pkgs.coreutils
+                pkgs.findutils
+                pkgs.diffutils
+                pkgs.gawk
+                pkgs.gnused
+                pkgs.patch
+
+                # network, archives
+                pkgs.git
+                pkgs.curl
+                pkgs.unzip
+                pkgs.gnutar
+                pkgs.gzip
+                pkgs.bzip2
+                pkgs.xz
+                pkgs.cacert
+            ];
+
+            devToolchain = baseToolchain ++ [
+                ocamlPkgs.ocaml-lsp
+                ocamlPkgs.ocamlformat
+                ocamlPkgs.utop
+                ocamlPkgs.odoc
+            ];
+
+            commonExtraCommands = ''
+                mkdir -p ./root
+                mkdir -p ./tmp
+                chmod 1777 ./tmp
+                mkdir -p ./workspace
+                mkdir -p ./home/ocaml
+
+                echo "root:x:0:0:root:/root:/bin/bash"                         >  ./etc/passwd
+                echo "ocaml:x:1000:1000:OCaml Developer:/home/ocaml:/bin/bash" >> ./etc/passwd
+                echo "root:x:0:"     >  ./etc/group
+                echo "ocaml:x:1000:" >> ./etc/group
+
+                cp ${./entrypoint.sh} ./entrypoint.sh
+                chmod +x ./entrypoint.sh
+            '';
+
+            commonFakeRootCommands = ''
+                chown -R 1000:1000 ./home/ocaml
+                chown 1000:1000 ./workspace
+            '';
+
+            commonConfig = {
+                Entrypoint = [ "/entrypoint.sh" ];
+                Cmd = [ "/bin/bash" ];
+                User = "ocaml";
+                Env = [
+                "PATH=/bin:/usr/bin"
+                "HOME=/home/ocaml"
+                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                "GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                "OPAMNOSANDBOX=1"
+                ];
+                WorkingDir = "/workspace";
+            };
+
+            mkImage = { tag, toolchain }: pkgs.dockerTools.buildLayeredImage {
+                name = "ghcr.io/josarv/ocaml";
+                inherit tag;
+                contents = pkgs.buildEnv {
+                    name = "ocaml-dev-env";
+                    paths = toolchain;
+                    pathsToLink = [ "/bin" "/lib" "/share" "/etc" ];
+                };
+                extraCommands = commonExtraCommands;
+                fakeRootCommands = commonFakeRootCommands;
+                config = commonConfig;
+            };
+
+        in
+            {
+                packages.${system} = rec {
+                    base = mkImage {
+                        tag = version;
+                        toolchain = baseToolchain;
+                    };
+                    dev = mkImage {
+                        tag = "${version}-dev";
+                        toolchain = devToolchain;
+                    };
+                    default = dev;
+                };
+            };
+}
