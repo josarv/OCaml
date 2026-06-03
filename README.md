@@ -88,6 +88,11 @@ nix build .#base --out-link result-base && docker load < result-base
 nix build .#dev  --out-link result-dev  && docker load < result-dev
 ```
 
+## Potential TODO
+
+- Maybe use `nix2container`
+- Maybe provide a 'stable' image variation (not based on `nixpkgs-unstable`)
+
 ## License
 
 [MIT](LICENSE)
