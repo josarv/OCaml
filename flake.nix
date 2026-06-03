@@ -3,11 +3,14 @@
 
     inputs = {
         nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+        flake-utils.url = "github:numtide/flake-utils";
     };
 
-    outputs = { self, nixpkgs }:
+    outputs = { self, nixpkgs, flake-utils }:
+        flake-utils.lib.eachSystem
+            [ "x86_64-linux" "aarch64-linux" ]
+            (system:
         let
-            system = "x86_64-linux";
             pkgs = import nixpkgs { inherit system; };
             ocamlPkgs = pkgs.ocaml-ng.ocamlPackages_latest;
             version = pkgs.lib.versions.majorMinor ocamlPkgs.ocaml.version;
@@ -24,7 +27,7 @@
                 pkgs.pkg-config
                 pkgs.m4
 
-                # shell, utilities and core utilities
+                # shell, utilities
                 pkgs.bash
                 pkgs.coreutils
                 pkgs.findutils
@@ -77,11 +80,11 @@
                 Cmd = [ "/bin/bash" ];
                 User = "ocaml";
                 Env = [
-                "PATH=/bin:/usr/bin"
-                "HOME=/home/ocaml"
-                "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                "OPAMNOSANDBOX=1"
+                    "PATH=/bin:/usr/bin"
+                    "HOME=/home/ocaml"
+                    "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                    "GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                    "OPAMNOSANDBOX=1"
                 ];
                 WorkingDir = "/workspace";
             };
@@ -101,7 +104,7 @@
 
         in
             {
-                packages.${system} = rec {
+                packages = rec {
                     base = mkImage {
                         tag = version;
                         toolchain = baseToolchain;
@@ -112,5 +115,6 @@
                     };
                     default = dev;
                 };
-            };
+            }
+        );
 }
