@@ -55,6 +55,9 @@
             ];
 
             commonExtraCommands = ''
+                mkdir -p ./usr/bin
+                ln -s /bin/env ./usr/bin/env
+
                 mkdir -p ./root
                 mkdir -p ./tmp
                 chmod 1777 ./tmp
