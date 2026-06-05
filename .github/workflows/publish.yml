@@ -25,10 +25,12 @@ jobs:
                   sudo rm -rf /opt/hostedtoolcache/CodeQL
                   df -h
 
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
 
-            - uses: DeterminateSystems/nix-installer-action@v16
-            - uses: DeterminateSystems/magic-nix-cache-action@v8
+            - uses: DeterminateSystems/nix-installer-action@main
+            - uses: DeterminateSystems/magic-nix-cache-action@main
+              with:
+                github-actions-cache: enabled
 
             - name: Update flake inputs
               run: nix flake update
@@ -50,7 +52,7 @@ jobs:
 
             - name: Log in to GHCR
               if: steps.changed.outputs.result == 'true' || github.event_name == 'workflow_dispatch'
-              uses: docker/login-action@v3
+              uses: docker/login-action@v4
               with:
                   registry: ghcr.io
                   username: ${{ github.actor }}
