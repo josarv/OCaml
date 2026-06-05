@@ -103,7 +103,7 @@
                 contents = pkgs.buildEnv {
                     name = "ocaml-dev-env";
                     paths = toolchain;
-                    pathsToLink = [ "/bin" "/sbin" "/lib" "/lib64" "/share" "/etc" ];
+                    pathsToLink = [ "/bin" "/lib" "/lib64" "/share" "/etc" ];
                 };
                 extraCommands = commonExtraCommands;
                 fakeRootCommands = commonFakeRootCommands;
