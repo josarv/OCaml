@@ -26,6 +26,8 @@
                 pkgs.gnumake
                 pkgs.pkg-config
                 pkgs.m4
+                pkgs.glibc
+                pkgs.stdenv.cc.cc.lib
 
                 # shell, utilities
                 pkgs.bash
@@ -35,6 +37,7 @@
                 pkgs.gawk
                 pkgs.gnused
                 pkgs.patch
+                pkgs.gnugrep
 
                 # network, archives
                 pkgs.git
@@ -55,6 +58,8 @@
             ];
 
             commonExtraCommands = ''
+                ln -sf /lib ./lib64 2>/dev/null || true
+
                 mkdir -p ./usr/bin
                 ln -s /bin/env ./usr/bin/env
 
@@ -98,7 +103,7 @@
                 contents = pkgs.buildEnv {
                     name = "ocaml-dev-env";
                     paths = toolchain;
-                    pathsToLink = [ "/bin" "/lib" "/share" "/etc" ];
+                    pathsToLink = [ "/bin" "/sbin" "/lib" "/lib64" "/share" "/etc" ];
                 };
                 extraCommands = commonExtraCommands;
                 fakeRootCommands = commonFakeRootCommands;
