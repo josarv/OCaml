@@ -58,10 +58,20 @@
             ];
 
             commonExtraCommands = ''
-                ln -sf /lib ./lib64 2>/dev/null || true
-
+                mkdir -p ./lib
                 mkdir -p ./usr/bin
+
                 ln -s /bin/env ./usr/bin/env
+
+                # VS Code needs glibc and libstdc++ at standard paths.
+                # Use explicit Nix store paths — both packages are in the closure
+                # so these symlinks will be valid inside the container.
+                for f in ${pkgs.glibc}/lib/*; do
+                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
+                done
+                for f in ${pkgs.stdenv.cc.cc.lib}/lib/*; do
+                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
+                done
 
                 mkdir -p ./root
                 mkdir -p ./tmp
@@ -103,7 +113,7 @@
                 contents = pkgs.buildEnv {
                     name = "ocaml-dev-env";
                     paths = toolchain;
-                    pathsToLink = [ "/bin" "/lib" "/lib64" "/share" "/etc" ];
+                    pathsToLink = [ "/bin" "/share" "/etc" ];
                 };
                 extraCommands = commonExtraCommands;
                 fakeRootCommands = commonFakeRootCommands;
