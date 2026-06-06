@@ -38,6 +38,7 @@
                 pkgs.gnused
                 pkgs.patch
                 pkgs.gnugrep
+                pkgs.openssl
 
                 # network, archives
                 pkgs.git
@@ -66,12 +67,17 @@
                 ln -s /bin/env ./usr/bin/env
 
                 for f in ${pkgs.glibc}/lib/lib*.so*; do
-                    ln -sf "$f" ./lib/$(basename "$f")                   2>/dev/null || true
+                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
                     ln -sf "$f" ./lib/x86_64-linux-gnu/$(basename "$f") 2>/dev/null || true
                 done
 
                 for f in ${pkgs.stdenv.cc.cc.lib}/lib/lib*.so*; do
-                    ln -sf "$f" ./lib/$(basename "$f")                   2>/dev/null || true
+                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
+                    ln -sf "$f" ./lib/x86_64-linux-gnu/$(basename "$f") 2>/dev/null || true
+                done
+
+                for f in ${pkgs.openssl.out}/lib/lib*.so*; do
+                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
                     ln -sf "$f" ./lib/x86_64-linux-gnu/$(basename "$f") 2>/dev/null || true
                 done
 
@@ -83,13 +89,13 @@
                 mkdir -p ./workspace
                 mkdir -p ./home/ocaml
 
-                echo "root:x:0:0:root:/root:/bin/bash"                         >  ./etc/passwd
+                echo "root:x:0:0:root:/root:/bin/bash" > ./etc/passwd
                 echo "ocaml:x:1000:1000:OCaml Developer:/home/ocaml:/bin/bash" >> ./etc/passwd
-                echo "root:x:0:"     >  ./etc/group
+                echo "root:x:0:" > ./etc/group
                 echo "ocaml:x:1000:" >> ./etc/group
 
-                echo 'ID=nixos'                                  >  ./etc/os-release
-                echo 'NAME="NixOS"'                              >> ./etc/os-release
+                echo 'ID=nixos' > ./etc/os-release
+                echo 'NAME="NixOS"' >> ./etc/os-release
                 echo 'PRETTY_NAME="NixOS (OCaml Dev Container)"' >> ./etc/os-release
 
                 touch ./etc/profile
