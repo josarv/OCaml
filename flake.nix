@@ -59,19 +59,23 @@
 
             commonExtraCommands = ''
                 mkdir -p ./lib
+                mkdir -p ./lib/x86_64-linux-gnu
+                mkdir -p ./lib64
                 mkdir -p ./usr/bin
 
                 ln -s /bin/env ./usr/bin/env
 
-                # VS Code needs glibc and libstdc++ at standard paths.
-                # Use explicit Nix store paths — both packages are in the closure
-                # so these symlinks will be valid inside the container.
-                for f in ${pkgs.glibc}/lib/*; do
-                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
+                for f in ${pkgs.glibc}/lib/lib*.so*; do
+                    ln -sf "$f" ./lib/$(basename "$f")                   2>/dev/null || true
+                    ln -sf "$f" ./lib/x86_64-linux-gnu/$(basename "$f") 2>/dev/null || true
                 done
-                for f in ${pkgs.stdenv.cc.cc.lib}/lib/*; do
-                    ln -sf "$f" ./lib/$(basename "$f") 2>/dev/null || true
+
+                for f in ${pkgs.stdenv.cc.cc.lib}/lib/lib*.so*; do
+                    ln -sf "$f" ./lib/$(basename "$f")                   2>/dev/null || true
+                    ln -sf "$f" ./lib/x86_64-linux-gnu/$(basename "$f") 2>/dev/null || true
                 done
+
+                ln -sf ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 ./lib64/ld-linux-x86-64.so.2
 
                 mkdir -p ./root
                 mkdir -p ./tmp
@@ -83,6 +87,12 @@
                 echo "ocaml:x:1000:1000:OCaml Developer:/home/ocaml:/bin/bash" >> ./etc/passwd
                 echo "root:x:0:"     >  ./etc/group
                 echo "ocaml:x:1000:" >> ./etc/group
+
+                echo 'ID=nixos'                                  >  ./etc/os-release
+                echo 'NAME="NixOS"'                              >> ./etc/os-release
+                echo 'PRETTY_NAME="NixOS (OCaml Dev Container)"' >> ./etc/os-release
+
+                touch ./etc/profile
 
                 cp ${./entrypoint.sh} ./entrypoint.sh
                 chmod +x ./entrypoint.sh
