@@ -113,6 +113,7 @@
                     "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
                     "GIT_SSL_CAINFO=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
                     "OPAMNOSANDBOX=1"
+                    "LD_LIBRARY_PATH=/lib:/lib/x86_64-linux-gnu:/lib64"
                 ];
                 WorkingDir = "/workspace";
             };
