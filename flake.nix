@@ -39,6 +39,11 @@
                 pkgs.patch
                 pkgs.gnugrep
                 pkgs.openssl
+                pkgs.which
+                pkgs.ncurses
+                pkgs.less
+                pkgs.procps
+                pkgs.file
 
                 # network, archives
                 pkgs.git
